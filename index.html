@@ -30,22 +30,27 @@
 
 
 <script>
-async function drawFromJSON(jsonFile) {
+let regions = [];
+let angle = 0;
+
+async function init(jsonFile) {
+    const response = await fetch(jsonFile);
+    regions = await response.json();
+    startDrawing();
+}
+
+function startDrawing() {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    // 🔥 Mejora: desactivar suavizado
     ctx.imageSmoothingEnabled = false;
 
-    // Cargar JSON
-    const response = await fetch(jsonFile);
-    const regions = await response.json();
-
+    // Calcular límites
     let min_x = Infinity;
     let max_x = -Infinity;
     let min_y = Infinity;
     let max_y = -Infinity;
-    
+
     for (const region of regions) {
         for (const p of region.contour) {
             if (p[0] < min_x) min_x = p[0];
@@ -55,7 +60,6 @@ async function drawFromJSON(jsonFile) {
         }
     }
 
-    // Escala y centro (igual que tu Python)
     const width = max_x - min_x;
     const height = max_y - min_y;
 
@@ -63,52 +67,62 @@ async function drawFromJSON(jsonFile) {
     const center_x = (min_x + max_x) / 2;
     const center_y = (min_y + max_y) / 2;
 
-    // Limpiar canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 🔥 (Opcional PRO) invertir orden si se ve raro
-    // regions.reverse();
+        ctx.save();
 
-    // Dibujar cada región
-    for (const region of regions) {
+        // 🔥 ROTACIÓN
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(angle);
 
-        const color = `rgb(${region.color[0]}, ${region.color[1]}, ${region.color[2]})`;
+        for (const region of regions) {
 
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;   // 🔥 borde
-        ctx.lineWidth = 0.5;       // 🔥 grosor borde
+            const color = `rgb(${region.color[0]}, ${region.color[1]}, ${region.color[2]})`;
 
-        const points = region.contour;
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 0.5;
 
-        ctx.beginPath();
+            const points = region.contour;
 
-        // Primer punto
-        let x = (points[0][0] - center_x) * scale + canvas.width / 2;
-        let y = (center_y - points[0][1]) * scale + canvas.height / 2;
+            ctx.beginPath();
 
-        ctx.moveTo(x, y);
+            let x = (points[0][0] - center_x) * scale;
+            let y = (center_y - points[0][1]) * scale;
 
-        // Resto de puntos
-        for (let i = 1; i < points.length; i++) {
-            x = (points[i][0] - center_x) * scale + canvas.width / 2;
-            y = (center_y - points[i][1]) * scale + canvas.height / 2;
-            ctx.lineTo(x, y);
+            ctx.moveTo(x, y);
+
+            for (let i = 1; i < points.length; i++) {
+                x = (points[i][0] - center_x) * scale;
+                y = (center_y - points[i][1]) * scale;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.lineTo(
+                (points[0][0] - center_x) * scale,
+                (center_y - points[0][1]) * scale
+            );
+
+            ctx.fill();
+            ctx.stroke();
         }
 
-        // 🔥 cierre manual (más preciso que closePath)
-        ctx.lineTo(
-            (points[0][0] - center_x) * scale + canvas.width / 2,
-            (center_y - points[0][1]) * scale + canvas.height / 2
-        );
+        ctx.restore();
 
-        ctx.fill();
-        ctx.stroke(); // 🔥 dibuja borde
+        // 🔥 velocidad de giro (ajusta aquí)
+        angle += 0.01;
+
+        requestAnimationFrame(draw);
     }
+
+    draw();
 }
 
 // Ejecutar
-drawFromJSON("resources/sunflowers.json");
+init("resources/sunflowers.json");
 </script>
+
 
 </body>
 </html>
