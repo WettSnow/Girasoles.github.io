@@ -29,6 +29,9 @@ async function drawFromJSON(jsonFile) {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
+    // 🔥 Mejora: desactivar suavizado
+    ctx.imageSmoothingEnabled = false;
+
     // Cargar JSON
     const response = await fetch(jsonFile);
     const regions = await response.json();
@@ -46,7 +49,6 @@ async function drawFromJSON(jsonFile) {
             if (p[1] > max_y) max_y = p[1];
         }
     }
-    
 
     // Escala y centro (igual que tu Python)
     const width = max_x - min_x;
@@ -59,11 +61,17 @@ async function drawFromJSON(jsonFile) {
     // Limpiar canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // 🔥 (Opcional PRO) invertir orden si se ve raro
+    // regions.reverse();
+
     // Dibujar cada región
     for (const region of regions) {
 
         const color = `rgb(${region.color[0]}, ${region.color[1]}, ${region.color[2]})`;
+
         ctx.fillStyle = color;
+        ctx.strokeStyle = color;   // 🔥 borde
+        ctx.lineWidth = 0.5;       // 🔥 grosor borde
 
         const points = region.contour;
 
@@ -82,9 +90,14 @@ async function drawFromJSON(jsonFile) {
             ctx.lineTo(x, y);
         }
 
-        // Cerrar figura
-        ctx.closePath();
+        // 🔥 cierre manual (más preciso que closePath)
+        ctx.lineTo(
+            (points[0][0] - center_x) * scale + canvas.width / 2,
+            (center_y - points[0][1]) * scale + canvas.height / 2
+        );
+
         ctx.fill();
+        ctx.stroke(); // 🔥 dibuja borde
     }
 }
 
