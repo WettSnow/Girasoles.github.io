@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dibujo desde JSON</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: black;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas" width="800" height="800"></canvas>
+
+<script>
+async function drawFromJSON(jsonFile) {
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Cargar JSON
+    const response = await fetch(jsonFile);
+    const regions = await response.json();
+
+    // Obtener todos los puntos
+    const allPoints = regions.flatMap(r => r.contour);
+
+    const xs = allPoints.map(p => p[0]);
+    const ys = allPoints.map(p => p[1]);
+
+    const min_x = Math.min(...xs);
+    const max_x = Math.max(...xs);
+    const min_y = Math.min(...ys);
+    const max_y = Math.max(...ys);
+
+    // Escala y centro (igual que tu Python)
+    const width = max_x - min_x;
+    const height = max_y - min_y;
+
+    const scale = Math.min(600 / width, 600 / height);
+    const center_x = (min_x + max_x) / 2;
+    const center_y = (min_y + max_y) / 2;
+
+    // Limpiar canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Dibujar cada región
+    for (const region of regions) {
+
+        const color = `rgb(${region.color[0]}, ${region.color[1]}, ${region.color[2]})`;
+        ctx.fillStyle = color;
+
+        const points = region.contour;
+
+        ctx.beginPath();
+
+        // Primer punto
+        let x = (points[0][0] - center_x) * scale + canvas.width / 2;
+        let y = (center_y - points[0][1]) * scale + canvas.height / 2;
+
+        ctx.moveTo(x, y);
+
+        // Resto de puntos
+        for (let i = 1; i < points.length; i++) {
+            x = (points[i][0] - center_x) * scale + canvas.width / 2;
+            y = (center_y - points[i][1]) * scale + canvas.height / 2;
+            ctx.lineTo(x, y);
+        }
+
+        // Cerrar figura
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+// Ejecutar
+drawFromJSON("resources/sunflowers.json");
+</script>
+
+</body>
+</html>
