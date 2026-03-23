@@ -14,7 +14,16 @@
             height: 100vh;
             overflow: hidden;
         }
-
+        button {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        padding: 10px 15px;
+        background: #222;
+        color: white;
+        border: none;
+        cursor: pointer;
+        }
         canvas {
             background: black;
         }
@@ -23,6 +32,11 @@
 <body>
 
 <canvas id="canvas" width="800" height="800"></canvas>
+
+<audio id="musica" loop>
+    <source src="audio/musica.mp3" type="audio/mpeg">
+</audio>
+
 
 <audio id="musica" autoplay loop>
     <source src="audio/musica.mp3" type="audio/mpeg">
@@ -38,6 +52,14 @@ async function init(jsonFile) {
     regions = await response.json();
     startDrawing();
 }
+
+const audio = new Audio("audio/musica.mp3");
+audio.loop = true;
+
+document.addEventListener("click", () => {
+    audio.play();
+}, { once: true });
+
 
 function startDrawing() {
     const canvas = document.getElementById("canvas");
